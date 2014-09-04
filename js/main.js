@@ -9,6 +9,7 @@ function createMineField(){
 		for (var j = 0; j < 9; j ++) {
 			var spot = {};
 			spot.isCovered = true;
+			spot.loc = [i, j]
 			spot.content = 'empty';
 			row.spots.push(spot);
 		}
@@ -61,12 +62,13 @@ function calculateAllNumber(minefield){
 
 function neighboring(minefield, row, column){
 	var neighbors = [];
+
 	for ( var i = -1; i <= 1; i ++) {
 		var newRow = row + i;
-		if ( newRow < 9 && newRow > 0){
+		if ( newRow < 9 && newRow >= 0){
 			for (var j = -1; j <= 1; j ++) {
 				var newColumn = column + j;
-				if (newColumn < 9 && newColumn > 0){
+				if (newColumn < 9 && newColumn >= 0){
 					var neighbor = getSpot(minefield, newRow, newColumn);
 					neighbors.push(neighbor);
 				}
@@ -85,19 +87,24 @@ function hasWon(minefield){
 			}
 		}
 	}
+	console.log("won")	
 	return true;
 }
 
-function hasLost(minefield){
+function recursiveOpen(minefield, spot){
 	for(var i = 0; i < 9; i++){
 		for(var j = 0; j < 9; j++){
-			var spot = getSpot(minefield, i, j);
-			if(!spot.isCovered && spot.content == "mine"){
-				return false;
+			if (!spot.isCovered && spot.content == "empty"){
+				var neighbors = neighboring(minefield, spot.loc[0], spot.loc[1]);
+				neighbors.forEach(function(neighbor){
+					if (neighbor.isCovered == true){
+						neighbor.isCovered = false
+						recursiveOpen(minefield, neighbor)
+					}
+				})
 			}
 		}
 	}
-	return true;
 }
 
 
@@ -114,17 +121,27 @@ function placeRandomMine(minefield){
 
 function MinesweeperController($scope) {
 	$scope.minefield = createMineField();
+	$scope.isWon = false;
+	$scope.isLossMessageVisable = false;
 	$scope.uncoverSpot = function(spot){
 		spot.isCovered = false;
 		
+		recursiveOpen($scope.minefield, spot)
+		
 		if(hasWon($scope.minefield)) {
-			$scope.isWinMessageVisable = true;
+			$scope.isWon = true;
 		}
-		if(hasLost($scope.minefield)){
-			$scope.isLossMessageVisable = true;
+		
+		if(spot.content == "mine"){
+			spot.content = "wrong"
+			$scope.isLost = true;
+			for(var i = 0; i < 9; i++){
+				for(var j = 0; j < 9; j++){
+					var spot = getSpot($scope.minefield, i, j)
+					spot.isCovered = false
+				}
+			}
 		}
 	}
-	
-	
 }
 
